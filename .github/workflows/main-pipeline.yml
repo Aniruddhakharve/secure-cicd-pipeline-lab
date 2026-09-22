@@ -1,0 +1,27 @@
+name: Main Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  build-test:
+    uses: ./.github/workflows/reusable-build-test.yml
+    with:
+      run-tests: true
+
+  show-result:
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show build and test result
+        run: |
+          echo "Main pipeline test result: ${{ needs.build-test.outputs.test_result }}"
