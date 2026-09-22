@@ -1,0 +1,24 @@
+name: PR Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+    build-test:
+        uses: ./.github/workflows/reusable-build-test.yml
+        with:
+            run-tests: true
+
+    show-result:
+        needs: build-test
+        runs-on: ubuntu-latest
+        steps:
+            - name: Show test result
+              run: |
+                echo "Reusable workflow test result: ${{ needs.build-test.outputs.test_result }}"
