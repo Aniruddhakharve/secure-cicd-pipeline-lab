@@ -10,15 +10,21 @@ permissions:
   contents: read
 
 jobs:
+    lint:
+        uses: ./.github/workflows/reusable-lint.yml
+
     build-test:
+        needs: lint
         uses: ./.github/workflows/reusable-build-test.yml
         with:
             run-tests: true
 
     show-result:
-        needs: build-test
+        needs: [lint, build-test]
         runs-on: ubuntu-latest
         steps:
             - name: Show test result
               run: |
+                echo "Lint result: ${{ needs.lint.outputs.lint_result}}"
                 echo "Reusable workflow test result: ${{ needs.build-test.outputs.test_result }}"
+                

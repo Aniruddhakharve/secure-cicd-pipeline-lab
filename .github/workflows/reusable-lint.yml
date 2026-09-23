@@ -1,0 +1,62 @@
+name: Reusable Lint
+
+on:
+  workflow_call:
+    outputs:
+        lint_result:
+            description: "Overall result of the lint matrix"
+            value: ${{ jobs.lint-summary.outputs.lint_result }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    strategy:
+            fail-fast: false
+            matrix:
+                python-version: [ "3.11", "3.12", "3.13" ]
+
+    outputs:
+        lint_result: ${{ steps.lint.outputs.lint_result }}
+    steps:
+        - name: checkout code
+          uses: actions/checkout@v7
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: ${{ matrix.python-version }}
+            cache: "pip"
+
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip
+            python -m pip install -r requirements.txt
+
+        - name: Run Python syntax check
+          id: lint
+          run: |
+            python -m compileall app tests
+            echo "lint_result=passed" >> "$GITHUB_OUTPUT"
+
+  lint-summary:
+    if: ${{ always() }}
+    needs: lint
+
+    outputs:
+        lint_result: ${{ steps.summary.outputs.lint_result }}
+    
+    runs-on: ubuntu-latest
+
+    steps:
+        - name: Generate lint result
+          id: summary
+          run: |
+            if [ "${{ needs.lint.result }}" = "success" ]; then
+                echo "All matrix lint jobs passed."
+                echo "lint_result=passed" >> "$GITHUB_OUTPUT"
+            else
+                echo "One or more matrix lint jobs failed. "
+                echo "lint_result=failed" >> "$GITHUB_OUTPUT"
+                exit 1
+            fi

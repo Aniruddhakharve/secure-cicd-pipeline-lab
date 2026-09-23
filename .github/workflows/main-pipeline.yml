@@ -12,16 +12,21 @@ permissions:
 
 jobs:
 
+  lint:
+    uses: ./.github/workflows/reusable-lint.yml
+
   build-test:
+    needs: lint
     uses: ./.github/workflows/reusable-build-test.yml
     with:
       run-tests: true
 
   show-result:
-    needs: build-test
+    needs: [lint, build-test]
     runs-on: ubuntu-latest
 
     steps:
       - name: Show build and test result
         run: |
+          echo "Main pipeline lint result: ${{ needs.lint.outputs.lint_result }}"
           echo "Main pipeline test result: ${{ needs.build-test.outputs.test_result }}"
