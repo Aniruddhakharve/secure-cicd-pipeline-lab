@@ -1,0 +1,96 @@
+name: Reusable Trivy Image Scan
+
+on:
+  workflow_call:
+    inputs:
+      image_ref:
+        description: "Docker image reference to scan"
+        required: true
+        type: string
+
+      artifact_name:
+        description: "Docker image artifact name"
+        required: true
+        type: string
+
+    outputs:
+      trivy_result:
+        description: "Result of the Trivy image scan"
+        value: ${{ jobs.trivy-scan-summary.outputs.trivy_result }}
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+
+      - name: Load Docker image
+        run: |
+          echo "Loading Docker image artifact..."
+
+          gunzip -c docker-image.tar.gz | docker load
+
+          echo "Docker image loaded successfully."
+
+      - name: Show loaded image
+        env:
+          IMAGE_REF: ${{ inputs.image_ref }}
+        run: |
+          echo "Image to scan:"
+          echo "$IMAGE_REF"
+
+          docker image inspect "$IMAGE_REF" > /dev/null
+
+          echo "Exact image is available locally."
+
+      - name: Run Trivy image scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ inputs.image_ref }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+          vuln-type: "os,library"
+
+      - name: Upload Trivy SARIF report
+        if: ${{ always() && hashFiles('trivy-results.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+          category: "Trivy Image Scan"
+
+      - name: Upload Trivy report artifact
+        if: ${{ always() && hashFiles('trivy-results.sarif') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-results.sarif
+          if-no-files-found: error
+
+  trivy-scan-summary:
+    if: ${{ always() }}
+    needs: trivy-scan
+    runs-on: ubuntu-latest
+
+    outputs:
+      trivy_result: ${{ steps.summary.outputs.trivy_result }}
+
+    steps:
+      - name: Generate Trivy result
+        id: summary
+        env:
+          TRIVY_RESULT: ${{ needs.trivy-scan.result }}
+        run: |
+          if [ "$TRIVY_RESULT" = "success" ]; then
+            echo "Trivy image scan passed."
+            echo "trivy_result=passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "Trivy image scan failed."
+            echo "trivy_result=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
