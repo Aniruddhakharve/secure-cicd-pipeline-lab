@@ -1,0 +1,77 @@
+name: Reusable Dependency Scan
+
+on:
+  workflow_call:
+    outputs:
+      dependency_scan_result:
+        description: "Result of the pip-audit dependency scan"
+        value: ${{ jobs.dependency-summary.outputs.dependency_scan_result }}
+
+jobs:
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install pip-audit
+
+      - name: Run pip-audit table scan
+        run: |
+          pip-audit \
+            --requirement requirements.txt \
+            --format columns \
+            | tee pip-audit-report.txt
+
+      - name: Generate pip-audit JSON report
+        run: |
+          pip-audit \
+            --requirement requirements.txt \
+            --format json \
+            --output pip-audit-report.json
+
+      - name: Upload dependency scan reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-reports
+          path: |
+            pip-audit-report.txt
+            pip-audit-report.json
+
+  dependency-summary:
+    if: ${{ always() }}
+    needs: dependency-scan
+    runs-on: ubuntu-latest
+
+    outputs:
+      dependency_scan_result: ${{ steps.summary.outputs.dependency_scan_result }}
+
+    steps:
+
+      - name: Generate dependency scan result
+        id: summary
+        run: |
+          if [ "${{ needs.dependency-scan.result }}" = "success" ]; then
+            echo "Dependency vulnerability scan passed."
+            echo "dependency_scan_result=passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "Dependency vulnerability scan failed."
+            echo "dependency_scan_result=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi

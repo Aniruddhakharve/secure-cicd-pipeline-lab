@@ -30,8 +30,12 @@ jobs:
     needs: lint
     uses: ./.github/workflows/reusable-secret-scan.yml
 
+  dependency-scan:
+    needs: lint
+    uses: ./.github/workflows/reusable-dependency-scan.yml
+
   show-result:
-    needs: [lint, build-test, sast, secret-scan]
+    needs: [lint, build-test, sast, secret-scan, dependency-scan]
     runs-on: ubuntu-latest
 
     steps:
@@ -41,3 +45,4 @@ jobs:
           echo "Main pipeline test result: ${{ needs.build-test.outputs.test_result }}"
           echo "Main pipeline SAST result: ${{ needs.sast.outputs.sast_result }}"
           echo "Main pipeline secret scan result: ${{ needs.secret-scan.outputs.secret_scan_result }}"
+          echo "Main pipeline dependency scan result: ${{ needs.dependency-scan.outputs.dependency_scan_result }}"
