@@ -34,8 +34,12 @@ jobs:
     needs: lint
     uses: ./.github/workflows/reusable-dependency-scan.yml
 
+  dockerfile-lint:
+    needs: lint
+    uses: ./.github/workflows/reusable-dockerfile-lint.yml
+
   show-result:
-    needs: [lint, build-test, sast, secret-scan, dependency-scan]
+    needs: [lint, build-test, sast, secret-scan, dependency-scan , dockerfile-lint]
     runs-on: ubuntu-latest
 
     steps:
@@ -46,3 +50,4 @@ jobs:
           echo "Main pipeline SAST result: ${{ needs.sast.outputs.sast_result }}"
           echo "Main pipeline secret scan result: ${{ needs.secret-scan.outputs.secret_scan_result }}"
           echo "Main pipeline dependency scan result: ${{ needs.dependency-scan.outputs.dependency_scan_result }}"
+          echo "Main pipeline Dockerfile lint result: ${{ needs.dockerfile-lint.outputs.dockerfile_lint_result }}"
