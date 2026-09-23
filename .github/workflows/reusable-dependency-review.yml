@@ -1,0 +1,41 @@
+name: Reusable Dependency Review
+
+on:
+  workflow_call:
+    outputs:
+        dependency_review_result:
+            description: "Result of the dependency review"
+            value: ${{ jobs.dependency-review-summary.outputs.dependency_review_result }}
+
+jobs:
+    dependency-review:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: checkout code
+              uses: actions/checkout@v7
+
+            - name: Run Dependency Review
+              uses: actions/dependency-review-action@v4
+              with:
+                fail-on-severity: critical
+
+    dependency-review-summary:
+        if: ${{ always() }}
+        runs-on: ubuntu-latest
+        needs: dependency-review
+        outputs:
+            dependency_review_result: ${{ steps.summary.outputs.dependency_review_result }}
+
+        steps:
+            - name: Generate dependency review result
+              id: summary
+              run: |
+                if  [ "${{ needs.dependency-review.result }}" = "success" ]; then
+                  echo "Dependency review passed"
+                  echo "dependency_review_result=passed" >> $GITHUB_OUTPUT
+                else
+                  echo "Dependency review failed"
+                  echo "dependency_review_result=failed" >> $GITHUB_OUTPUT
+                  exit 1
+                fi
