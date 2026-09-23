@@ -41,14 +41,14 @@ jobs:
   docker-build:
     needs: [lint, build-test, sast , secret-scan, dependency-scan , dockerfile-lint]
     uses: ./.github/workflows/reusable-docker-build.yml
-    secrets: inherit
     with:
       image_name: "secure-cicd-pipeline-lab"
       image_tag: ${{ github.sha }}
+    secrets:
       docker_username: ${{ secrets.DOCKER_USERNAME }}
 
   show-result:
-    needs: [lint, build-test, sast, secret-scan, dependency-scan , dockerfile-lint , docker-build]
+    needs: [lint,build-test,sast,secret-scan,dependency-scan,dockerfile-lint,docker-build]
     runs-on: ubuntu-latest
 
     steps:
@@ -62,5 +62,3 @@ jobs:
           echo "Main pipeline Dockerfile lint result: ${{ needs.dockerfile-lint.outputs.dockerfile_lint_result }}"
           echo "Docker image: ${{ needs.docker-build.outputs.image_ref }}"
           echo "Docker artifact: ${{ needs.docker-build.outputs.artifact_name }}"
-
-#test1

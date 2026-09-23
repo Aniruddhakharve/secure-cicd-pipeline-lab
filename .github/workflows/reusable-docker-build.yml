@@ -13,10 +13,11 @@ on:
         required: true
         type: string
 
+    secrets:    
       docker_username:
         description: "Docker Hub username"
         required: true
-        type: string
+        
 
     outputs:
       image_ref:
@@ -41,7 +42,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          IMAGE="${{ inputs.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          IMAGE="${{ secrets.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
 
           echo "Building Docker image:"
           echo "$IMAGE"
@@ -51,7 +52,7 @@ jobs:
       - name: Set image outputs
         id: image
         run: |
-          IMAGE="${{ inputs.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          IMAGE="${{ secrets.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
           ARTIFACT_NAME="docker-image-${{ inputs.image_tag }}"
 
           echo "image_ref=$IMAGE" >> "$GITHUB_OUTPUT"
@@ -62,7 +63,7 @@ jobs:
 
       - name: Save Docker image
         run: |
-          IMAGE="${{ inputs.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          IMAGE="${{ secrets.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
 
           docker save "$IMAGE" | gzip > docker-image.tar.gz
 
