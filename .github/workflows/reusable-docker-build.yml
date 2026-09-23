@@ -1,0 +1,76 @@
+name: Reusable Docker Build
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: "Docker image repository name"
+        required: true
+        type: string
+
+      image_tag:
+        description: "Docker image tag"
+        required: true
+        type: string
+
+      docker_username:
+        description: "Docker Hub username"
+        required: true
+        type: string
+
+    outputs:
+      image_ref:
+        description: "Full Docker image reference"
+        value: ${{ jobs.docker-build.outputs.image_ref }}
+
+      artifact_name:
+        description: "Name of the Docker image artifact"
+        value: ${{ jobs.docker-build.outputs.artifact_name }}
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_ref: ${{ steps.image.outputs.image_ref }}
+      artifact_name: ${{ steps.image.outputs.artifact_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Build Docker image
+        run: |
+          IMAGE="${{ inputs.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+
+          echo "Building Docker image:"
+          echo "$IMAGE"
+
+          docker build -t "$IMAGE" .
+
+      - name: Set image outputs
+        id: image
+        run: |
+          IMAGE="${{ inputs.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          ARTIFACT_NAME="docker-image-${{ inputs.image_tag }}"
+
+          echo "image_ref=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+
+          echo "Image reference: $IMAGE"
+          echo "Artifact name: $ARTIFACT_NAME"
+
+      - name: Save Docker image
+        run: |
+          IMAGE="${{ inputs.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+
+          docker save "$IMAGE" | gzip > docker-image.tar.gz
+
+          echo "Docker image saved as docker-image.tar.gz"
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ inputs.image_tag }}
+          path: docker-image.tar.gz
+          if-no-files-found: error

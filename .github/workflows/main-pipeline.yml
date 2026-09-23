@@ -41,6 +41,7 @@ jobs:
   docker-build:
     needs: [lint, build-test, sast , secret-scan, dependency-scan , dockerfile-lint]
     uses: ./.github/workflows/reusable-docker-build.yml
+    secrets: inherit
     with:
       image_name: "secure-cicd-pipeline-lab"
       image_tag: ${{ github.sha }}
