@@ -13,11 +13,11 @@ on:
         required: true
         type: string
 
-    secrets:    
+        
       docker_username:
         description: "Docker Hub username"
         required: true
-        
+        type: string
 
     outputs:
       image_ref:
@@ -42,7 +42,7 @@ jobs:
 
       - name: Build Docker image
         env:
-          DOCKER_USERNAME: ${{ secrets.docker_username }}
+          DOCKER_USERNAME:  ${{ inputs.docker_username }}
           IMAGE_NAME: ${{ inputs.image_name }}
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
@@ -58,7 +58,7 @@ jobs:
       - name: Set image outputs
         id: image
         env:
-          DOCKER_USERNAME: ${{ secrets.docker_username }}
+          DOCKER_USERNAME:  ${{ inputs.docker_username }}
           IMAGE_NAME: ${{ inputs.image_name }}
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
@@ -75,7 +75,7 @@ jobs:
 
       - name: Save Docker image
         env:
-          DOCKER_USERNAME: ${{ secrets.docker_username }}
+          DOCKER_USERNAME: ${{ inputs.docker_username }}
           IMAGE_NAME: ${{ inputs.image_name }}
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
@@ -88,7 +88,7 @@ jobs:
 
 
       - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
         with:
           name: docker-image-${{ inputs.image_tag }}
           path: docker-image.tar.gz
