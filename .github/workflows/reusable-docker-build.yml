@@ -41,33 +41,51 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Build Docker image
+        env:
+          DOCKER_USERNAME: ${{ secrets.docker_username }}
+          IMAGE_NAME: ${{ inputs.image_name }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          IMAGE="${{ secrets.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+            IMAGE="$DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
 
-          echo "Building Docker image:"
-          echo "$IMAGE"
+            echo "Building Docker image:"
+            echo "$IMAGE"
 
-          docker build -t "$IMAGE" .
+            docker build -t "$IMAGE" .
+
+
 
       - name: Set image outputs
         id: image
+        env:
+          DOCKER_USERNAME: ${{ secrets.docker_username }}
+          IMAGE_NAME: ${{ inputs.image_name }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          IMAGE="${{ secrets.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
-          ARTIFACT_NAME="docker-image-${{ inputs.image_tag }}"
+            IMAGE="$DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
+            ARTIFACT_NAME="docker-image-$IMAGE_TAG"
 
-          echo "image_ref=$IMAGE" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+            echo "image_ref=$IMAGE" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
 
-          echo "Image reference: $IMAGE"
-          echo "Artifact name: $ARTIFACT_NAME"
+            echo "Image reference: $IMAGE"
+            echo "Artifact name: $ARTIFACT_NAME"
+
+
 
       - name: Save Docker image
+        env:
+          DOCKER_USERNAME: ${{ secrets.docker_username }}
+          IMAGE_NAME: ${{ inputs.image_name }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          IMAGE="${{ secrets.docker_username }}/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+          IMAGE="$DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG"
 
           docker save "$IMAGE" | gzip > docker-image.tar.gz
 
           echo "Docker image saved as docker-image.tar.gz"
+
+
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
