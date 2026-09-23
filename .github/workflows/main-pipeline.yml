@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
 
@@ -21,8 +22,12 @@ jobs:
     with:
       run-tests: true
 
+  sast:
+    needs: lint
+    uses: ./.github/workflows/reusable-sast.yml
+
   show-result:
-    needs: [lint, build-test]
+    needs: [lint, build-test , sast ]
     runs-on: ubuntu-latest
 
     steps:
@@ -30,3 +35,4 @@ jobs:
         run: |
           echo "Main pipeline lint result: ${{ needs.lint.outputs.lint_result }}"
           echo "Main pipeline test result: ${{ needs.build-test.outputs.test_result }}"
+          echo "Main pipeline SAST result: ${{ needs.sast.outputs.sast_result }}"

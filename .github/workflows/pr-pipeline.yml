@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
     lint:
@@ -19,12 +20,16 @@ jobs:
         with:
             run-tests: true
 
+    sast:
+        needs: lint
+        uses: ./.github/workflows/reusable-sast.yml
+
     show-result:
-        needs: [lint, build-test]
+        needs: [lint, build-test , sast ]
         runs-on: ubuntu-latest
         steps:
             - name: Show test result
               run: |
                 echo "Lint result: ${{ needs.lint.outputs.lint_result}}"
                 echo "Reusable workflow test result: ${{ needs.build-test.outputs.test_result }}"
-                
+                echo "SAST result: ${{ needs.sast.outputs.sast_result }}"
