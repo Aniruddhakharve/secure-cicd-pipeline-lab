@@ -62,3 +62,5 @@ jobs:
           echo "Main pipeline Dockerfile lint result: ${{ needs.dockerfile-lint.outputs.dockerfile_lint_result }}"
           echo "Docker image: ${{ needs.docker-build.outputs.image_ref }}"
           echo "Docker artifact: ${{ needs.docker-build.outputs.artifact_name }}"
+
+#test1
