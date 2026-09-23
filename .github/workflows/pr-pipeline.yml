@@ -24,12 +24,17 @@ jobs:
         needs: lint
         uses: ./.github/workflows/reusable-sast.yml
 
+    secret-scan:
+        needs: lint
+        uses: ./.github/workflows/reusable-secret-scan.yml
+
     show-result:
-        needs: [lint, build-test , sast ]
+        needs: [lint, build-test, sast, secret-scan]
         runs-on: ubuntu-latest
         steps:
-            - name: Show test result
+            - name: Show pipeline results
               run: |
                 echo "Lint result: ${{ needs.lint.outputs.lint_result}}"
                 echo "Reusable workflow test result: ${{ needs.build-test.outputs.test_result }}"
                 echo "SAST result: ${{ needs.sast.outputs.sast_result }}"
+                echo "Secret scan result: ${{ needs.secret-scan.outputs.secret_scan_result }}"
