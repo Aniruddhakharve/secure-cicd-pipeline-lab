@@ -1,0 +1,44 @@
+name: Reusable Dockerfile Lint
+
+on:
+  workflow_call:
+    outputs:
+        dockerfile_lint_result:
+            description: "Result of the Hadolint Dockerfile scan"
+            value: ${{ jobs.dockerfile-lint-summary.outputs.dockerfile_lint_result }}
+
+jobs:
+    dockerfile-lint:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: checkout code
+              uses: actions/checkout@v7
+
+            - name: Run Hadolint Dockerfile scan
+              uses: hadolint/hadolint-action@v3.3.0
+              with:
+                dockerfile: Dockerfile
+            
+    dockerfile-lint-summary:
+        if: ${{ always() }}
+        needs: dockerfile-lint
+        
+        outputs:
+            dockerfile_lint_result: ${{ steps.summary.outputs.dockerfile_lint_result }}
+
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Generate Dockerfile lint result
+              id: summary
+              run: |
+                if [ "${{ needs.dockerfile-lint.result }}" = "success" ]; then
+                   echo "Hadolint Dockerfile scan passed."
+                   echo "dockerfile_lint_result=passed" >> $GITHUB_OUTPUT
+                else
+                   echo "Hadolint Dockerfile scan failed."
+                   echo "dockerfile_lint_result=failed" >> $GITHUB_OUTPUT
+                   exit 1
+                fi
+        

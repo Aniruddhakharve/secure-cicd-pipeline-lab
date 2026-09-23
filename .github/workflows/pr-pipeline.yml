@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
     lint:
@@ -19,12 +20,36 @@ jobs:
         with:
             run-tests: true
 
+    sast:
+        needs: lint
+        uses: ./.github/workflows/reusable-sast.yml
+
+    secret-scan:
+        needs: lint
+        uses: ./.github/workflows/reusable-secret-scan.yml
+
+    dependency-scan:
+        needs: lint
+        uses: ./.github/workflows/reusable-dependency-scan.yml
+
+    dependency-review:
+        needs: lint
+        uses: ./.github/workflows/reusable-dependency-review.yml
+
+    dockerfile-lint:
+        needs: lint
+        uses: ./.github/workflows/reusable-dockerfile-lint.yml
+
     show-result:
-        needs: [lint, build-test]
+        needs: [lint, build-test, sast, secret-scan, dependency-scan, dependency-review , dockerfile-lint]
         runs-on: ubuntu-latest
         steps:
-            - name: Show test result
+            - name: Show pipeline results
               run: |
                 echo "Lint result: ${{ needs.lint.outputs.lint_result}}"
                 echo "Reusable workflow test result: ${{ needs.build-test.outputs.test_result }}"
-                
+                echo "SAST result: ${{ needs.sast.outputs.sast_result }}"
+                echo "Secret scan result: ${{ needs.secret-scan.outputs.secret_scan_result }}"
+                echo "Dependency scan result: ${{ needs.dependency-scan.outputs.dependency_scan_result }}"
+                echo "Dependency review result: ${{ needs.dependency-review.outputs.dependency_review_result }}"
+                echo "Dockerfile lint result: ${{ needs.dockerfile-lint.outputs.dockerfile_lint_result }}"
