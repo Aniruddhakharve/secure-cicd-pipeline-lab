@@ -44,8 +44,7 @@ jobs:
     with:
       image_name: "secure-cicd-pipeline-lab"
       image_tag: ${{ github.sha }}
-    secrets:
-      docker_username: ${{ secrets.DOCKER_USERNAME }}
+      docker_username: ${{ vars.DOCKER_USERNAME }}
 
   trivy-scan:
     needs: [docker-build]
