@@ -1,6 +1,7 @@
-from flask import Flask, jsonify
 import os
+
 import mysql.connector
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -25,16 +26,11 @@ def health():
     try:
         connection = get_db_connection()
         connection.close()
-
-        return jsonify(
-            status="healthy",
-            database="connected"
-        ), 200
-
-    except Exception:
+        return jsonify(status="healthy", database="connected"), 200
+    except mysql.connector.Error:
         return jsonify(
             status="unhealthy",
-            database="disconnected"
+            database="disconnected",
         ), 503
 
 
