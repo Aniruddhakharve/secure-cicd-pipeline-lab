@@ -7,7 +7,18 @@ def test_home():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.data == b"Secure CI/CD Pipeline Lab"
+    assert b"Secure CI/CD Pipeline Lab" in response.data
+    assert b"DevSecOps" in response.data
+
+
+def test_security_headers():
+    client = app.test_client()
+
+    response = client.get("/")
+
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert "Content-Security-Policy" in response.headers
 
 
 def test_health_without_database():

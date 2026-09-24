@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <meta
+        name="description"
+        content="Secure CI/CD Pipeline Lab - DevSecOps deployment platform"
+    >
+    <title>Secure CI/CD Pipeline Lab</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+    <main class="page-shell">
+
+        <!-- Hero -->
+        <section class="hero">
+
+            <div class="hero-badge">
+                <span class="status-dot"></span>
+                PRODUCTION ENVIRONMENT
+            </div>
+
+            <h1>
+                Secure CI/CD
+                <span>Pipeline Lab</span>
+            </h1>
+
+            <p class="hero-description">
+                A production-style Flask application delivered through an
+                automated DevSecOps pipeline with security gates,
+                containerized deployment, and AWS infrastructure.
+            </p>
+
+            <div class="hero-actions">
+                <a class="primary-button" href="#pipeline">
+                    Explore Pipeline
+                </a>
+
+                <a class="secondary-button" href="/health">
+                    View Health JSON
+                </a>
+            </div>
+
+        </section>
+
+
+        <!-- Status cards -->
+        <section class="status-grid">
+
+            <article class="status-card">
+                <div class="card-icon">⚡</div>
+
+                <div>
+                    <p class="card-label">APPLICATION</p>
+
+                    <h2 id="application-status">
+                        Checking...
+                    </h2>
+
+                    <p class="card-description">
+                        Flask application runtime
+                    </p>
+                </div>
+            </article>
+
+
+            <article class="status-card">
+                <div class="card-icon">🗄️</div>
+
+                <div>
+                    <p class="card-label">DATABASE</p>
+
+                    <h2 id="database-status">
+                        Checking...
+                    </h2>
+
+                    <p class="card-description">
+                        MySQL connectivity
+                    </p>
+                </div>
+            </article>
+
+
+            <article class="status-card">
+                <div class="card-icon">🐳</div>
+
+                <div>
+                    <p class="card-label">CONTAINER</p>
+
+                    <h2>Running</h2>
+
+                    <p class="card-description">
+                        Docker + Compose
+                    </p>
+                </div>
+            </article>
+
+
+            <article class="status-card">
+                <div class="card-icon">☁️</div>
+
+                <div>
+                    <p class="card-label">PLATFORM</p>
+
+                    <h2>AWS</h2>
+
+                    <p class="card-description">
+                        Production EC2 deployment
+                    </p>
+                </div>
+            </article>
+
+        </section>
+
+
+        <!-- Deployment information -->
+        <section class="deployment-panel">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">DEPLOYMENT</p>
+
+                    <h2>Immutable Release</h2>
+                </div>
+
+                <span class="release-badge">
+                    SHA DEPLOYMENT
+                </span>
+            </div>
+
+
+            <div class="deployment-grid">
+
+                <div class="deployment-item">
+                    <span>Image Repository</span>
+
+                    <strong>
+                        {{ docker_username }}/secure-cicd-pipeline-lab
+                    </strong>
+                </div>
+
+
+                <div class="deployment-item">
+                    <span>Image Tag / Commit SHA</span>
+
+                    <strong class="sha-value">
+                        {{ image_tag }}
+                    </strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Pipeline -->
+        <section id="pipeline" class="pipeline-section">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">DELIVERY PIPELINE</p>
+
+                    <h2>Secure software delivery</h2>
+                </div>
+            </div>
+
+
+            <div class="pipeline">
+
+                <div class="pipeline-step">
+                    <div class="step-number">01</div>
+
+                    <div>
+                        <strong>Lint</strong>
+                        <span>Code quality</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">02</div>
+
+                    <div>
+                        <strong>Test</strong>
+                        <span>Automated validation</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">03</div>
+
+                    <div>
+                        <strong>SAST</strong>
+                        <span>Source security</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">04</div>
+
+                    <div>
+                        <strong>Secrets</strong>
+                        <span>Leak detection</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">05</div>
+
+                    <div>
+                        <strong>SCA</strong>
+                        <span>Dependency security</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">06</div>
+
+                    <div>
+                        <strong>Docker</strong>
+                        <span>Image build</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">07</div>
+
+                    <div>
+                        <strong>Trivy</strong>
+                        <span>Image scanning</span>
+                    </div>
+                </div>
+
+
+                <div class="pipeline-connector"></div>
+
+
+                <div class="pipeline-step">
+                    <div class="step-number">08</div>
+
+                    <div>
+                        <strong>Deploy</strong>
+                        <span>AWS production</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Technology stack -->
+        <section class="technology-section">
+
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">TECHNOLOGY STACK</p>
+
+                    <h2>Built around secure delivery</h2>
+                </div>
+            </div>
+
+
+            <div class="technology-grid">
+
+                <div class="technology-card">
+                    <strong>Python</strong>
+                    <span>Application</span>
+                </div>
+
+                <div class="technology-card">
+                    <strong>Flask</strong>
+                    <span>Web framework</span>
+                </div>
+
+                <div class="technology-card">
+                    <strong>Docker</strong>
+                    <span>Containerization</span>
+                </div>
+
+                <div class="technology-card">
+                    <strong>GitHub Actions</strong>
+                    <span>CI/CD automation</span>
+                </div>
+
+                <div class="technology-card">
+                    <strong>Trivy</strong>
+                    <span>Container security</span>
+                </div>
+
+                <div class="technology-card">
+                    <strong>AWS</strong>
+                    <span>Cloud platform</span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Footer -->
+        <footer class="footer">
+
+            <div>
+                <strong>Secure CI/CD Pipeline Lab</strong>
+                <span>DevSecOps demonstration platform</span>
+            </div>
+
+            <div class="footer-status">
+                <span class="status-dot"></span>
+                Live Production Instance
+            </div>
+
+        </footer>
+
+    </main>
+
+
+    <script
+        src="{{ url_for('static', filename='app.js') }}"
+        defer
+    ></script>
+
+</body>
+</html>

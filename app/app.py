@@ -1,7 +1,7 @@
 import os
 
 import mysql.connector
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
@@ -16,9 +16,32 @@ def get_db_connection():
     )
 
 
+@app.after_request
+def add_security_headers(response):
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "style-src 'self'; "
+        "script-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'none'"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=()"
+    )
+    return response
+
+
 @app.route("/")
 def home():
-    return "Secure CI/CD Pipeline Lab"
+    return render_template(
+        "index.html",
+        image_tag=os.getenv("IMAGE_TAG", "local"),
+        docker_username=os.getenv("DOCKER_USERNAME", "local"),
+    )
 
 
 @app.route("/health")
@@ -26,7 +49,12 @@ def health():
     try:
         connection = get_db_connection()
         connection.close()
-        return jsonify(status="healthy", database="connected"), 200
+
+        return jsonify(
+            status="healthy",
+            database="connected",
+        ), 200
+
     except mysql.connector.Error:
         return jsonify(
             status="unhealthy",
