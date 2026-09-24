@@ -27,13 +27,15 @@ jobs:
 
 
 
-            - name: Install and verify Docker
+            - name: Verify SSM execution environment
               run: |
                 COMMAND_ID=$(aws ssm send-command \
                 --instance-ids i-00b53b698111d659e \
                 --document-name "AWS-RunShellScript" \
                 --parameters 'commands=[
-                    "if ! docker compose version >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y docker-compose-v2; fi",
+                    "whoami",
+                    "id",
+                    "docker --version",
                     "docker compose version"
                 ]' \
                 --query "Command.CommandId" \
