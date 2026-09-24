@@ -97,3 +97,4 @@ jobs:
           echo "Docker image: ${{ needs.docker-build.outputs.image_ref }}"
           echo "Docker artifact: ${{ needs.docker-build.outputs.artifact_name }}"
           echo "Trivy scan result: ${{ needs.trivy-scan.outputs.trivy_result }}"
+          echo "Production deployment result: ${{ needs.production-deploy.outputs.deployment_result }}"
