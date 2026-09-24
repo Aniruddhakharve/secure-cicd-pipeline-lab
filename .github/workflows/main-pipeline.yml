@@ -63,6 +63,10 @@ jobs:
     secrets:
       docker_password: ${{ secrets.DOCKER_PASSWORD }}
 
+  aws-ssm-test:
+    needs: [docker-push]
+    uses: ./.github/workflows/reusable-aws-ssm-test.yml
+
   show-result:
     needs:
       - lint
