@@ -53,6 +53,16 @@ jobs:
       image_ref: ${{ needs.docker-build.outputs.image_ref }}
       artifact_name: ${{ needs.docker-build.outputs.artifact_name }}
 
+  docker-push:
+    needs: [docker-build, trivy-scan]
+    uses: ./.github/workflows/reusable-docker-push.yml
+    with:
+      image_ref: ${{ needs.docker-build.outputs.image_ref }}
+      artifact_name: ${{ needs.docker-build.outputs.artifact_name }}
+      docker_username: ${{ vars.DOCKER_USERNAME }}
+    secrets:
+      docker_password: ${{ secrets.DOCKER_PASSWORD }}
+
   show-result:
     needs:
       - lint
