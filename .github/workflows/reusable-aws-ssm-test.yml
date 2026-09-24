@@ -285,7 +285,8 @@ jobs:
           COMMANDS=$(python3 -c 'import json; print(json.dumps({"commands": [
             "set -e",
             "cd /opt/secure-cicd-pipeline-lab",
-            "docker compose up -d"
+            "docker compose down || echo \"No existing application to stop.\"",
+            "docker compose up -d --force-recreate"
           ]}))')
 
           COMMAND_ID=$(aws ssm send-command \
@@ -312,6 +313,47 @@ jobs:
       # 20. Read production application startup result  
       # --------------------------------------------------
       - name: Read production application startup result
+        run: |
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id i-00b53b698111d659e \
+            --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
+            --output json
+
+      
+      # --------------------------------------------------
+      # 21. Verify production application health
+      # --------------------------------------------------
+      - name: Verify production application health
+        run: |
+          COMMANDS=$(python3 -c 'import json; print(json.dumps({"commands": [
+            "set -e",
+            "curl -fsS http://localhost:5000/health"
+          ]}))')
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids i-00b53b698111d659e \
+            --document-name "AWS-RunShellScript" \
+            --parameters "$COMMANDS" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+          echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
+
+      # --------------------------------------------------
+      # 22. Wait for application health check
+      # --------------------------------------------------
+      - name: Wait for application health check
+        run: |
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id i-00b53b698111d659e || true
+
+      # --------------------------------------------------
+      # 23. Read application health result
+      # --------------------------------------------------
+      - name: Read application health result
         run: |
           aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
