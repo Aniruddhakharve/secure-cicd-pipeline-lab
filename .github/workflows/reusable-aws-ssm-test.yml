@@ -37,12 +37,14 @@ jobs:
                   IMAGE_TAG: ${{ inputs.image-tag }}
                   DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
               run: |
+                COMMANDS=$(python3 -c 'import json, os; print(json.dumps({"commands": ["mkdir -p /opt/secure-cicd-pipeline-lab", "echo DOCKER_USERNAME=" + os.environ["DOCKER_USERNAME"] + " > /opt/secure-cicd-pipeline-lab/.env", "echo IMAGE_TAG=" + os.environ["IMAGE_TAG"] + " >> /opt/secure-cicd-pipeline-lab/.env", "cat /opt/secure-cicd-pipeline-lab/.env"]}))')
+
                 COMMAND_ID=$(aws ssm send-command \
-                --instance-ids i-00b53b698111d659e \
-                --document-name "AWS-RunShellScript" \
-                --parameters commands="mkdir -p /opt/secure-cicd-pipeline-lab,echo DOCKER_USERNAME=$DOCKER_USERNAME > /opt/secure-cicd-pipeline-lab/.env,echo IMAGE_TAG=$IMAGE_TAG >> /opt/secure-cicd-pipeline-lab/.env,cat /opt/secure-cicd-pipeline-lab/.env" \
-                --query "Command.CommandId" \
-                --output text)
+                  --instance-ids i-00b53b698111d659e \
+                  --document-name "AWS-RunShellScript" \
+                  --parameters "$COMMANDS" \
+                  --query "Command.CommandId" \
+                  --output text)
 
                 echo "SSM Command ID: $COMMAND_ID"
                 echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
