@@ -65,6 +65,9 @@ jobs:
 
   aws-ssm-test:
     needs: [docker-push]
+    permissions:
+      id-token: write
+      contents: read
     uses: ./.github/workflows/reusable-aws-ssm-test.yml
 
   show-result:
