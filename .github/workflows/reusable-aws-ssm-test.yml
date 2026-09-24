@@ -27,16 +27,15 @@ jobs:
 
 
 
-            - name: Verify SSM execution environment
+            - name: Create production deployment directory
               run: |
                 COMMAND_ID=$(aws ssm send-command \
                 --instance-ids i-00b53b698111d659e \
                 --document-name "AWS-RunShellScript" \
                 --parameters 'commands=[
-                    "whoami",
-                    "id",
-                    "docker --version",
-                    "docker compose version"
+                    "mkdir -p /opt/secure-cicd-pipeline-lab",
+                    "test -d /opt/secure-cicd-pipeline-lab",
+                    "ls -ld /opt/secure-cicd-pipeline-lab"
                 ]' \
                 --query "Command.CommandId" \
                 --output text)
