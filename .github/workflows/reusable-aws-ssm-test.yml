@@ -64,7 +64,7 @@ jobs:
         run: |
           aws ssm wait command-executed \
             --command-id "$COMMAND_ID" \
-            --instance-id i-00b53b698111d659e || true
+            --instance-id i-00b53b698111d659e
 
       # --------------------------------------------------
       # 5. Read AWS CLI installation result
