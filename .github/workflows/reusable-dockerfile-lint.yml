@@ -16,7 +16,7 @@ jobs:
               uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
 
             - name: Run Hadolint Dockerfile scan
-              uses: hadolint/hadolint-action@v3.3.0
+              uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387
               with:
                 dockerfile: Dockerfile
             
