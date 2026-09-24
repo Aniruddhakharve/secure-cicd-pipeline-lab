@@ -37,13 +37,13 @@ jobs:
           aws sts get-caller-identity
 
       # --------------------------------------------------
-      # 3. Install AWS CLI on production EC2
+      # 3. Install AWS CLI v2 on production EC2
       # --------------------------------------------------
       - name: Install AWS CLI on production EC2
         run: |
           COMMANDS=$(python3 -c 'import json; print(json.dumps({"commands": [
             "set -e",
-            "if command -v aws >/dev/null 2>&1; then echo \"AWS CLI already installed.\"; else apt-get update && apt-get install -y awscli; fi",
+            "if command -v aws >/dev/null 2>&1; then echo \"AWS CLI already installed.\"; else apt-get update && apt-get install -y curl unzip && curl -fsSL \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o /tmp/awscliv2.zip && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip; fi",
             "aws --version"
           ]}))')
 
