@@ -1,4 +1,4 @@
-name: reusable-docker-push.yml
+name: Reusable Docker Push
 
 on:
   workflow_call:
