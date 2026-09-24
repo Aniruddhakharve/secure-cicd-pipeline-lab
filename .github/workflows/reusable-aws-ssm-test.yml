@@ -2,6 +2,11 @@ name: Reusable AWS SSM Test
 
 on:
   workflow_call:
+    inputs:
+      image-tag:
+        description: "Docker image tag to deploy"
+        required: true
+        type: string
 
 jobs:
     aws-ssm-test:
@@ -28,14 +33,18 @@ jobs:
 
 
             - name: Create production deployment directory
+              env:
+                  IMAGE_TAG: ${{ inputs.image-tag }}
+                  DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
               run: |
                 COMMAND_ID=$(aws ssm send-command \
                 --instance-ids i-00b53b698111d659e \
                 --document-name "AWS-RunShellScript" \
                 --parameters 'commands=[
-                    "mkdir -p /opt/secure-cicd-pipeline-lab",
-                    "test -d /opt/secure-cicd-pipeline-lab",
-                    "ls -ld /opt/secure-cicd-pipeline-lab"
+                  \"mkdir -p /opt/secure-cicd-pipeline-lab\",
+                  \"echo 'DOCKER_USERNAME=$DOCKER_USERNAME' > /opt/secure-cicd-pipeline-lab/.env\",
+                  \"echo 'IMAGE_TAG=$IMAGE_TAG' >> /opt/secure-cicd-pipeline-lab/.env\",
+                  \"cat /opt/secure-cicd-pipeline-lab/.env\"
                 ]' \
                 --query "Command.CommandId" \
                 --output text)

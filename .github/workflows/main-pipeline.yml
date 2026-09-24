@@ -69,6 +69,8 @@ jobs:
       id-token: write
       contents: read
     uses: ./.github/workflows/reusable-aws-ssm-test.yml
+    with:
+      image-tag: ${{ github.sha }}
 
   show-result:
     needs:
