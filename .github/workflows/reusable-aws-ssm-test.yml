@@ -64,21 +64,118 @@ jobs:
         run: |
           aws ssm wait command-executed \
             --command-id "$COMMAND_ID" \
-            --instance-id i-00b53b698111d659e
+            --instance-id i-00b53b698111d659e || true
 
       # --------------------------------------------------
       # 5. Read AWS CLI installation result
       # --------------------------------------------------
       - name: Read AWS CLI installation result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
+
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
 
       # --------------------------------------------------
-      # 6. Create production environment
+      # 6. Install Docker Engine and Docker Compose
+      # --------------------------------------------------
+      - name: Install Docker and Docker Compose on production EC2
+        run: |
+          COMMANDS=$(python3 <<'PY'
+          import json
+
+          commands = [
+              "set -e",
+
+              """if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
+                echo "Docker or Docker Compose is missing. Installing required packages..."
+
+                apt-get update
+                apt-get install -y ca-certificates curl
+
+                install -m 0755 -d /etc/apt/keyrings
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+                chmod a+r /etc/apt/keyrings/docker.asc
+
+                cat > /etc/apt/sources.list.d/docker.sources <<EOF
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+          Components: stable
+          Architectures: $(dpkg --print-architecture)
+          Signed-By: /etc/apt/keyrings/docker.asc
+          EOF
+
+                apt-get update
+                apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+              else
+                echo "Docker Engine and Docker Compose are already installed."
+              fi""",
+
+              "systemctl enable --now docker",
+
+              "docker --version",
+
+              "docker compose version"
+          ]
+
+          print(json.dumps({"commands": commands}))
+          PY
+          )
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids i-00b53b698111d659e \
+            --document-name "AWS-RunShellScript" \
+            --parameters "$COMMANDS" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+          echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
+
+      # --------------------------------------------------
+      # 7. Wait for Docker installation
+      # --------------------------------------------------
+      - name: Wait for Docker installation
+        run: |
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id i-00b53b698111d659e || true
+
+      # --------------------------------------------------
+      # 8. Read Docker installation result
+      # --------------------------------------------------
+      - name: Read Docker installation result
+        run: |
+          RESPONSE=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id i-00b53b698111d659e \
+            --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
+            --output json)
+
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
+
+      # --------------------------------------------------
+      # 9. Create production environment
       # --------------------------------------------------
       - name: Create production environment
         env:
@@ -126,7 +223,7 @@ jobs:
           echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
 
       # --------------------------------------------------
-      # 7. Wait for production environment creation
+      # 10. Wait for production environment creation
       # --------------------------------------------------
       - name: Wait for production environment creation
         run: |
@@ -135,19 +232,28 @@ jobs:
             --instance-id i-00b53b698111d659e || true
 
       # --------------------------------------------------
-      # 8. Read production environment creation result
+      # 11. Read production environment creation result
       # --------------------------------------------------
       - name: Read production environment creation result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
 
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
 
       # --------------------------------------------------
-      # 9. Download exact docker-compose.yml from commit
+      # 12. Download exact docker-compose.yml from commit
       # --------------------------------------------------
       - name: Download production compose file
         env:
@@ -172,7 +278,7 @@ jobs:
           echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
 
       # --------------------------------------------------
-      # 10. Wait for compose file download
+      # 13. Wait for compose file download
       # --------------------------------------------------
       - name: Wait for compose file download
         run: |
@@ -181,19 +287,28 @@ jobs:
             --instance-id i-00b53b698111d659e || true
 
       # --------------------------------------------------
-      # 11. Read compose file download result
+      # 14. Read compose file download result
       # --------------------------------------------------
       - name: Read compose file download result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
 
-      
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
+
       # --------------------------------------------------
-      # 12. Verify Docker Compose configuration
+      # 15. Verify Docker Compose configuration
       # --------------------------------------------------
       - name: Verify Docker Compose configuration
         run: |
@@ -213,9 +328,8 @@ jobs:
           echo "SSM Command ID: $COMMAND_ID"
           echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
 
-
       # --------------------------------------------------
-      # 13. Wait for Compose verification
+      # 16. Wait for Compose verification
       # --------------------------------------------------
       - name: Wait for Compose verification
         run: |
@@ -223,21 +337,29 @@ jobs:
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e || true
 
-
       # --------------------------------------------------
-      # 14. Read Compose verification result
+      # 17. Read Compose verification result
       # --------------------------------------------------
       - name: Read Compose verification result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
 
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
 
       # --------------------------------------------------
-      # 15. Pull production Docker images
+      # 18. Pull production Docker images
       # --------------------------------------------------
       - name: Pull production Docker images
         run: |
@@ -258,7 +380,7 @@ jobs:
           echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
 
       # --------------------------------------------------
-      # 16. Wait for Docker image pull
+      # 19. Wait for Docker image pull
       # --------------------------------------------------
       - name: Wait for Docker image pull
         run: |
@@ -267,18 +389,28 @@ jobs:
             --instance-id i-00b53b698111d659e || true
 
       # --------------------------------------------------
-      # 17. Read Docker image pull result
+      # 20. Read Docker image pull result
       # --------------------------------------------------
       - name: Read Docker image pull result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
+
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
 
       # --------------------------------------------------
-      # 18. Start production application
+      # 21. Start production application
       # --------------------------------------------------
       - name: Start production application
         run: |
@@ -299,9 +431,8 @@ jobs:
           echo "SSM Command ID: $COMMAND_ID"
           echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
 
-
       # --------------------------------------------------
-      # 19. Wait for application startup
+      # 22. Wait for application startup
       # --------------------------------------------------
       - name: Wait for production application startup
         run: |
@@ -310,19 +441,28 @@ jobs:
             --instance-id i-00b53b698111d659e || true
 
       # --------------------------------------------------
-      # 20. Read production application startup result  
+      # 23. Read production application startup result
       # --------------------------------------------------
       - name: Read production application startup result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
 
-      
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
+
       # --------------------------------------------------
-      # 21. Verify production application health
+      # 24. Verify production application health
       # --------------------------------------------------
       - name: Verify production application health
         run: |
@@ -342,7 +482,7 @@ jobs:
           echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
 
       # --------------------------------------------------
-      # 22. Wait for application health check
+      # 25. Wait for application health check
       # --------------------------------------------------
       - name: Wait for application health check
         run: |
@@ -351,12 +491,22 @@ jobs:
             --instance-id i-00b53b698111d659e || true
 
       # --------------------------------------------------
-      # 23. Read application health result
+      # 26. Read application health result
       # --------------------------------------------------
       - name: Read application health result
         run: |
-          aws ssm get-command-invocation \
+          RESPONSE=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id i-00b53b698111d659e \
             --query '{Status:Status,ResponseCode:ResponseCode,Output:StandardOutputContent,Error:StandardErrorContent}' \
-            --output json
+            --output json)
+
+          echo "$RESPONSE"
+
+          STATUS=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["Status"])')
+          RESPONSE_CODE=$(echo "$RESPONSE" | python3 -c 'import json, sys; print(json.load(sys.stdin)["ResponseCode"])')
+
+          if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
+            echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
+            exit 1
+          fi
