@@ -63,12 +63,12 @@ jobs:
     secrets:
       docker_password: ${{ secrets.DOCKER_PASSWORD }}
 
-  aws-ssm-test:
+  production-deploy:
     needs: [docker-push]
     permissions:
       id-token: write
       contents: read
-    uses: ./.github/workflows/reusable-aws-ssm-test.yml
+    uses: ./.github/workflows/reusable-production-deploy.yml
     with:
       image-tag: ${{ github.sha }}
 
@@ -82,6 +82,7 @@ jobs:
       - dockerfile-lint
       - docker-build
       - trivy-scan
+      - production-deploy
     runs-on: ubuntu-latest
 
     steps:

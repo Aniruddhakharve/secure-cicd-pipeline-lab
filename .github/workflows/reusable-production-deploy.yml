@@ -1,4 +1,4 @@
-name: Reusable AWS SSM Test
+name:  Reusable Production Deploy
 
 on:
   workflow_call:
@@ -9,7 +9,7 @@ on:
         type: string
 
 jobs:
-  aws-ssm-test:
+  production-deploy:
     runs-on: ubuntu-latest
 
     environment: Production
