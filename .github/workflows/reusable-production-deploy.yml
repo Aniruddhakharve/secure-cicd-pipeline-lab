@@ -1,4 +1,4 @@
-name:  Reusable Production Deploy
+name: Reusable Production Deploy
 
 on:
   workflow_call:
@@ -8,7 +8,13 @@ on:
         required: true
         type: string
 
+    outputs:
+      deployment_result:
+        description: "Result of the production deployment"
+        value: ${{ jobs.production-deploy.outputs.deployment_result }}
+
 jobs:
+
   production-deploy:
     runs-on: ubuntu-latest
 
@@ -17,6 +23,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
+
+    outputs:
+      deployment_result: ${{ steps.deployment_result.outputs.deployment_result }}
 
     steps:
 
@@ -509,4 +518,21 @@ jobs:
           if [ "$STATUS" != "Success" ] || [ "$RESPONSE_CODE" -ne 0 ]; then
             echo "SSM command failed: Status=$STATUS ResponseCode=$RESPONSE_CODE"
             exit 1
+          fi
+
+      # --------------------------------------------------
+      # 27. Set production deployment result
+      # --------------------------------------------------
+      - name: Set production deployment result
+        id: deployment_result
+        if: ${{ always() }}
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "Production deployment completed successfully."
+            echo "deployment_result=passed" >> "$GITHUB_OUTPUT"
+          else
+            echo "Production deployment failed."
+            echo "deployment_result=failed" >> "$GITHUB_OUTPUT"
           fi
