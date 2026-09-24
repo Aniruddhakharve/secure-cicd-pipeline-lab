@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
 
@@ -24,6 +23,9 @@ jobs:
 
   sast:
     needs: lint
+    permissions:
+      contents: read
+      security-events: write
     uses: ./.github/workflows/reusable-sast.yml
 
   secret-scan:
@@ -39,7 +41,7 @@ jobs:
     uses: ./.github/workflows/reusable-dockerfile-lint.yml
 
   docker-build:
-    needs: [lint, build-test, sast , secret-scan, dependency-scan , dockerfile-lint]
+    needs: [lint, build-test, sast, secret-scan, dependency-scan, dockerfile-lint]
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       image_name: "secure-cicd-pipeline-lab"
@@ -48,6 +50,9 @@ jobs:
 
   trivy-scan:
     needs: [docker-build]
+    permissions:
+      contents: read
+      security-events: write
     uses: ./.github/workflows/reusable-trivy-scan.yml
     with:
       image_ref: ${{ needs.docker-build.outputs.image_ref }}
