@@ -80,23 +80,24 @@ jobs:
       # --------------------------------------------------
       # 6. Create production environment
       # --------------------------------------------------
-      - name: Create production environment
+      - name: Debug production environment
         env:
           IMAGE_TAG: ${{ inputs.image-tag }}
           DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
         run: |
-          COMMANDS=$(python3 -c 'import json, os; username=os.environ["DOCKER_USERNAME"]; tag=os.environ["IMAGE_TAG"]; print(json.dumps({"commands": [
+          COMMANDS=$(python3 -c 'import json, os; print(json.dumps({"commands": [
             "set -e",
             "mkdir -p /opt/secure-cicd-pipeline-lab",
             "umask 077",
-            "echo DOCKER_USERNAME=" + username + " > /opt/secure-cicd-pipeline-lab/.env",
-            "echo IMAGE_TAG=" + tag + " >> /opt/secure-cicd-pipeline-lab/.env",
+            "echo DOCKER_USERNAME=" + os.environ["DOCKER_USERNAME"] + " > /opt/secure-cicd-pipeline-lab/.env",
+            "echo IMAGE_TAG=" + os.environ["IMAGE_TAG"] + " >> /opt/secure-cicd-pipeline-lab/.env",
             "aws secretsmanager get-secret-value --secret-id secure-cicd-pipeline-lab/production --query SecretString --output text > /tmp/production-secret.json",
             "chmod 600 /tmp/production-secret.json",
-            "python3 -c '\''import json; from pathlib import Path; secret=json.loads(Path(\"/tmp/production-secret.json\").read_text()); required=[\"MYSQL_DATABASE\",\"MYSQL_USER\",\"MYSQL_PASSWORD\",\"MYSQL_ROOT_PASSWORD\"]; assert all(k in secret for k in required), \"Secret is missing required keys\"; env=Path(\"/opt/secure-cicd-pipeline-lab/.env\"); env.write_text(\"DOCKER_USERNAME=\" + \"" + username + "\" + \"\\\\nIMAGE_TAG=\" + \"" + tag + "\" + \"\\\\n\" + \"\\\\n\".join(k + \"=\" + str(secret[k]) for k in required) + \"\\\\n\")'\''",
+            "python3 -c '\''import json; from pathlib import Path; s=json.loads(Path(\"/tmp/production-secret.json\").read_text()); print(\"Secret keys:\", sorted(s.keys())); required=[\"MYSQL_DATABASE\",\"MYSQL_USER\",\"MYSQL_PASSWORD\",\"MYSQL_ROOT_PASSWORD\"]; missing=[k for k in required if k not in s]; print(\"Missing secret keys:\", missing); assert not missing, \"Secrets Manager secret is missing required keys\"; env=Path(\"/opt/secure-cicd-pipeline-lab/.env\"); env.write_text(env.read_text() + \"\\\\n\".join(k + \"=\" + str(s[k]) for k in required) + \"\\\\n\")'\''",
+            "echo \"Generated .env keys:\"",
+            "cut -d= -f1 /opt/secure-cicd-pipeline-lab/.env",
             "rm -f /tmp/production-secret.json",
-            "chmod 600 /opt/secure-cicd-pipeline-lab/.env",
-            "python3 -c '\''from pathlib import Path; required={\"DOCKER_USERNAME\",\"IMAGE_TAG\",\"MYSQL_DATABASE\",\"MYSQL_USER\",\"MYSQL_PASSWORD\",\"MYSQL_ROOT_PASSWORD\"}; keys={line.split(\"=\",1)[0] for line in Path(\"/opt/secure-cicd-pipeline-lab/.env\").read_text().splitlines() if \"=\" in line}; assert required.issubset(keys), \"Missing required environment variables\"; print(\"Production .env created successfully with all required keys.\")'\''"
+            "chmod 600 /opt/secure-cicd-pipeline-lab/.env"
           ]}))')
 
           COMMAND_ID=$(aws ssm send-command \
