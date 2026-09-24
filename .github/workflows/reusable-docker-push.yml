@@ -1,0 +1,72 @@
+name: reusable-docker-push.yml
+
+on:
+  workflow_call:
+    inputs:
+        image_ref:
+            description: "Full Docker image reference"
+            required: true
+            type: string
+
+        artifact_name:
+            description: "Name of the Docker image artifact"
+            required: true
+            type: string
+
+        docker_username:
+            description: "Docker Hub username"
+            required: true
+            type: string
+
+    secrets:
+        docker_password:
+            description: "Docker Hub access token"
+            required: true
+
+jobs:
+    docker-push:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Download Docker image artifact
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                name: ${{ inputs.artifact_name }}
+            
+            - name: Load Docker image
+              run: |
+                echo "Loading Docker image artifact..."
+
+                gunzip -c docker-image.tar.gz | docker load
+
+                echo "Docker image loaded successfully."
+
+            - name: Verify Docker image
+              env:
+                IMAGE_REF: ${{ inputs.image_ref }}
+              run: |
+                echo "Image to push:"
+
+                echo "$IMAGE_REF"
+
+                docker image inspect "$IMAGE_REF" > /dev/null
+
+                echo "Exact image is available locally."
+
+            - name: Log in to Docker Hub
+              uses: docker/login-action@783ae9cac559640a24c9212dfa6cd9e998252f9a # v4.6.0
+              with:
+                username: ${{ inputs.docker_username }}
+                password: ${{ secrets.docker_password }}
+
+            - name: Push Docker image
+              env:
+                IMAGE_REF: ${{ inputs.image_ref }}
+              run: |
+                echo "Pushing Docker image:"
+
+                echo "$IMAGE_REF"
+
+                docker push "$IMAGE_REF"
+
+                echo "Docker image pushed successfully."
