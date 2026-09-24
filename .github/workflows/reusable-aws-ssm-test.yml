@@ -25,23 +25,25 @@ jobs:
               run: |
                 aws sts get-caller-identity
 
-            - name: Send Secrets Manager test command
+
+
+            - name: Install and verify Docker
               run: |
                 COMMAND_ID=$(aws ssm send-command \
                 --instance-ids i-00b53b698111d659e \
                 --document-name "AWS-RunShellScript" \
                 --parameters 'commands=[
-                    "if ! command -v aws >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y awscli; fi",
-                    "aws secretsmanager get-secret-value --secret-id secure-cicd-pipeline-lab/production --query SecretString --output text > /tmp/production-secret.json",
-                    "test -s /tmp/production-secret.json",
-                    "rm -f /tmp/production-secret.json",
-                    "echo Secrets Manager access successful."
+                    "if ! command -v docker >/dev/null 2>&1; then sudo apt-get update -y && sudo apt-get install -y docker.io; fi",
+                    "sudo systemctl enable --now docker",
+                    "docker --version"
                 ]' \
                 --query "Command.CommandId" \
                 --output text)
 
                 echo "SSM Command ID: $COMMAND_ID"
                 echo "COMMAND_ID=$COMMAND_ID" >> "$GITHUB_ENV"
+
+
 
             - name: Wait for SSM command
               run: |
