@@ -1,9 +1,7 @@
 services:
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/secure-cicd-pipeline-lab:${IMAGE_TAG}
     container_name: secure-cicd-app
     ports:
       - "5000:5000"
